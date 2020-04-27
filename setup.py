@@ -18,7 +18,6 @@ if __name__ == "__main__":
         author="Abhishek Thakur",
         author_email="abhishek4@gmail.com",
         url="https://github.com/abhishekkrthakur/yawml",
-        download_url="https://github.com/abhishekkrthakur/yawml/archive/v0.0.1.zip",
         license="MIT License",
         packages=find_packages(),
         include_package_data=True,
