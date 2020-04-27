@@ -11,7 +11,7 @@ with open('README.md', encoding='utf-8') as f:
 if __name__ == "__main__":
     setup(
         name="yawml",
-        version=sandesh.__version__,
+        version=yawml.__version__,
         description="YAWML: Yet Another Wrapper for Machine Learning",
         long_description=long_description,
         long_description_content_type='text/markdown',
