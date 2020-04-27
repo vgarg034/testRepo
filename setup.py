@@ -3,6 +3,7 @@ from setuptools import find_packages
 
 import yawml
 
+
 with open('README.md', encoding='utf-8') as f:
     long_description = f.read()
 
@@ -22,5 +23,8 @@ if __name__ == "__main__":
         packages=find_packages(),
         include_package_data=True,
         platforms=["linux", "unix"],
-        python_requires='>3.5.2'
+        python_requires='>3.5.2',
+        install_requires=[
+            "scikit-learn>=0.22.1"
+        ]
     )
