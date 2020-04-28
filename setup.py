@@ -11,7 +11,7 @@ with open('README.md', encoding='utf-8') as f:
 if __name__ == "__main__":
     setup(
         name="wtfml",
-        version=yawml.__version__,
+        version=wtfml.__version__,
         description="WTFML: Well That's Fantastic Machine Learning",
         long_description=long_description,
         long_description_content_type='text/markdown',
