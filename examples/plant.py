@@ -14,7 +14,7 @@ from sklearn import metrics
 from sklearn.model_selection import train_test_split
 
 from wtfml.engine import Engine
-from wtfml.data_loaders.image import ImageClassificationLoader
+from wtfml.data_loaders.image import ClassificationLoader
 
 
 class DenseCrossEntropy(nn.Module):
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         images, targets
     )
 
-    train_dataset = ImageClassificationLoader(
+    train_dataset = ClassificationLoader(
         image_paths=train_images,
         targets=train_targets,
         resize=(128, 128),
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         train_dataset, batch_size=16, shuffle=True, num_workers=4
     )
 
-    valid_dataset = ImageClassificationLoader(
+    valid_dataset = ClassificationLoader(
         image_paths=valid_images,
         targets=valid_targets,
         resize=(128, 128),
@@ -145,7 +145,7 @@ if __name__ == "__main__":
         [albumentations.Normalize(mean, std, max_pixel_value=255.0, always_apply=True)]
     )
 
-    test_dataset = ImageClassificationLoader(
+    test_dataset = ClassificationLoader(
         image_paths=images, targets=targets, resize=(128, 128), augmentations=aug
     )
     test_loader = torch.utils.data.DataLoader(
