@@ -75,8 +75,8 @@ if __name__ == "__main__":
     model = Model()
     model.to(args.device)
 
-    mean = (0.485, 0.456, 0.406)
-    std = (0.229, 0.224, 0.225)
+    mean = (0., 0., 0.)
+    std = (1, 1, 1)
     aug = albumentations.Compose(
         [albumentations.Normalize(mean, std, max_pixel_value=255.0, always_apply=True)]
     )
@@ -93,13 +93,15 @@ if __name__ == "__main__":
     )
 
     train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=4, shuffle=True, num_workers=4, collate_fn=collate_fn
+        train_dataset, batch_size=8, shuffle=True, num_workers=4, collate_fn=collate_fn
     )
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
 
     for epoch in range(args.epochs):
         train_loss = RCNNEngine.train(train_loader, model, optimizer, device=args.device)
+        torch.save(model.state_dict(), os.path.join(args.data_path, "model.bin"))
         print(
             f"Epoch={epoch}, Train Loss={train_loss}"
         )
@@ -115,12 +117,11 @@ if __name__ == "__main__":
     images = [os.path.join(args.data_path, "test", i + ".jpg") for i in images]
     targets = test_df.bboxes.values
 
-    aug = albumentations.Compose(
-        [albumentations.Normalize(mean, std, max_pixel_value=255.0, always_apply=True)]
-    )
-
     test_dataset = RCNNLoader(
-        image_paths=images, bounding_boxes=targets, resize=(1024, 1024), augmentations=aug
+        image_paths=images, 
+        bounding_boxes=targets, 
+        resize=(1024, 1024), 
+        augmentations=aug
     )
     test_loader = torch.utils.data.DataLoader(
         test_dataset, batch_size=4, shuffle=False, num_workers=4, collate_fn=collate_fn

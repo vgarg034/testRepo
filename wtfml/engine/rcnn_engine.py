@@ -4,17 +4,15 @@ from ..utils import AverageMeter
 
 try:
     import torch_xla.core.xla_model as xm
-
-    __xla_available = True
+    _xla_available = True
 except ImportError:
-    __xla_available = False
+    _xla_available = False
 
 try:
     from apex import amp
-
-    __apex_available = True
+    _apex_available = True
 except ImportError:
-    __apex_available = False
+    _apex_available = False
 
 
 class RCNNEngine:
@@ -29,11 +27,11 @@ class RCNNEngine:
         use_tpu=False,
         fp16=False,
     ):
-        if use_tpu and __xla_available:
+        if use_tpu and not _xla_available:
             raise Exception(
                 "You want to use TPUs but you dont have pytorch_xla installed"
             )
-        if fp16 and __apex_available:
+        if fp16 and not _apex_available:
             raise Exception("You want to use fp16 but you dont have apex installed")
         if fp16 and use_tpu:
             raise Exception("Apex fp16 is not available when using TPUs")
