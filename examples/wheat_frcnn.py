@@ -88,7 +88,6 @@ if __name__ == "__main__":
     train_dataset = RCNNLoader(
         image_paths=train_images,
         bounding_boxes=train_targets,
-        resize=(1024, 1024),
         augmentations=aug,
     )
 
@@ -112,6 +111,7 @@ if __name__ == "__main__":
     test_df.loc[:, "bbox"] = ["[0, 0, 10, 10]"] * len(test_df)
     test_df.bbox = test_df.bbox.apply(ast.literal_eval)
     test_df = test_df.groupby('image_id')['bbox'].apply(list).reset_index(name='bboxes')
+    test_image_ids = test_df.image_id.values
 
     images = test_df.image_id.values.tolist()
     images = [os.path.join(args.data_path, "test", i + ".jpg") for i in images]
@@ -120,7 +120,6 @@ if __name__ == "__main__":
     test_dataset = RCNNLoader(
         image_paths=images, 
         bounding_boxes=targets, 
-        resize=(1024, 1024), 
         augmentations=aug
     )
     test_loader = torch.utils.data.DataLoader(
@@ -142,4 +141,5 @@ if __name__ == "__main__":
 
     sample = pd.read_csv(os.path.join(args.data_path, "sample_submission.csv"))
     sample.loc[:, "PredictionString"] = prediction_strings
+    sample.loc[:, "image_id"] = test_image_ids
     sample.to_csv(os.path.join(args.data_path, "submission.csv"), index=False)

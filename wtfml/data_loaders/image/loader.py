@@ -38,10 +38,9 @@ class ClassificationLoader:
 
 
 class RCNNLoader:
-    def __init__(self, image_paths, bounding_boxes, resize, augmentations=None, torchvision_format=True):
+    def __init__(self, image_paths, bounding_boxes, augmentations=None, torchvision_format=True):
         self.image_paths = image_paths
         self.bounding_boxes = bounding_boxes
-        self.resize = resize
         self.augmentations = augmentations
         self.torchvision_format = torchvision_format
 
@@ -51,10 +50,6 @@ class RCNNLoader:
     def __getitem__(self, item):
         image = Image.open(self.image_paths[item])
         bboxes = self.bounding_boxes[item]
-        if self.resize is not None:
-            image = image.resize(
-                (self.resize[1], self.resize[0]), resample=Image.BILINEAR
-            )
         image = np.array(image)
         if self.augmentations is not None:
             augmented = self.augmentations(image=image, bboxes=bboxes)
