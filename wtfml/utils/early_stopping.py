@@ -1,14 +1,21 @@
 import torch
 import numpy as np
 
+try:
+    import torch_xla.core.xla_model as xm
+    _xla_available = True
+except ImportError:
+    _xla_available = False
+
 
 class EarlyStopping:
-    def __init__(self, patience=7, mode="max", delta=0.0001):
+    def __init__(self, patience=7, mode="max", delta=0.0001, tpu=False):
         self.patience = patience
         self.counter = 0
         self.mode = mode
         self.best_score = None
         self.early_stop = False
+        self.tpu = tpu
         self.delta = delta
         if self.mode == "min":
             self.val_score = np.Inf
@@ -45,5 +52,8 @@ class EarlyStopping:
                     self.val_score, epoch_score
                 )
             )
-            torch.save(model.state_dict(), model_path)
+            if self.tpu:
+                xm.save(model.state_dict(), model_path)
+            else:
+                torch.save(model.state_dict(), model_path)
         self.val_score = epoch_score
