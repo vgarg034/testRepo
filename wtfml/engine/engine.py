@@ -75,9 +75,9 @@ class Engine:
                     scheduler.step()
                 if b_idx > 0:
                     optimizer.zero_grad()
-
-            losses.update(loss.item(), data_loader.batch_size)
-            tk0.set_postfix(loss=losses.avg)
+            if not use_tpu:
+                losses.update(loss.item(), data_loader.batch_size)
+                tk0.set_postfix(loss=losses.avg)
         return losses.avg
 
     @staticmethod
@@ -97,7 +97,8 @@ class Engine:
                 predictions = predictions.cpu()
                 losses.update(loss.item(), data_loader.batch_size)
                 final_predictions.append(predictions)
-                tk0.set_postfix(loss=losses.avg)
+                if not use_tpu:
+                    tk0.set_postfix(loss=losses.avg)
         return final_predictions, losses.avg
 
     @staticmethod
