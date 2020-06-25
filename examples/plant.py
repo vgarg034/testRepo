@@ -14,7 +14,7 @@ from sklearn import metrics
 from sklearn.model_selection import train_test_split
 
 from wtfml.engine import Engine
-from wtfml.data_loaders.image import ClassificationLoader
+from wtfml.data_loaders.image import ClassificationDataLoader
 
 
 class DenseCrossEntropy(nn.Module):
@@ -96,26 +96,30 @@ if __name__ == "__main__":
         images, targets
     )
 
-    train_dataset = ClassificationLoader(
+    train_loader = ClassificationDataLoader(
         image_paths=train_images,
         targets=train_targets,
         resize=(128, 128),
         augmentations=aug,
+    ).fetch(
+        batch_size=16, 
+        num_workers=4, 
+        drop_last=False, 
+        shuffle=True, 
+        tpu=False
     )
 
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=16, shuffle=True, num_workers=4
-    )
-
-    valid_dataset = ClassificationLoader(
+    valid_loader = ClassificationDataLoader(
         image_paths=valid_images,
         targets=valid_targets,
         resize=(128, 128),
         augmentations=aug,
-    )
-
-    valid_loader = torch.utils.data.DataLoader(
-        valid_dataset, batch_size=16, shuffle=False, num_workers=4
+    ).fetch(
+        batch_size=16, 
+        num_workers=4, 
+        drop_last=False, 
+        shuffle=False, 
+        tpu=False
     )
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
@@ -145,11 +149,14 @@ if __name__ == "__main__":
         [albumentations.Normalize(mean, std, max_pixel_value=255.0, always_apply=True)]
     )
 
-    test_dataset = ClassificationLoader(
+    test_loader = ClassificationDataLoader(
         image_paths=images, targets=targets, resize=(128, 128), augmentations=aug
-    )
-    test_loader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=16, shuffle=False, num_workers=4
+    ).fetch(
+        batch_size=16, 
+        num_workers=4, 
+        drop_last=False, 
+        shuffle=False, 
+        tpu=False
     )
 
     predictions = Engine.predict(test_loader, model, device=args.device)
