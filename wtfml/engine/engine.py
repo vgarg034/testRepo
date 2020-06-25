@@ -105,7 +105,10 @@ class Engine:
         model.eval()
         final_predictions = []
         with torch.no_grad():
-            tk0 = tqdm(data_loader, total=len(data_loader), disable=use_tpu)
+            if use_tpu:
+                tk0 = tqdm(data_loader, disable=True)
+            else:
+                tk0 = tqdm(data_loader, total=len(data_loader))
             for b_idx, data in enumerate(tk0):
                 for key, value in data.items():
                     data[key] = value.to(device)
