@@ -47,11 +47,18 @@ class EarlyStopping:
 
     def save_checkpoint(self, epoch_score, model, model_path):
         if epoch_score not in [-np.inf, np.inf, -np.nan, np.nan]:
-            print(
-                "Validation score improved ({} --> {}). Saving model!".format(
-                    self.val_score, epoch_score
+            if self.tpu:
+                xm.master_print(
+                    "Validation score improved ({} --> {}). Saving model!".format(
+                        self.val_score, epoch_score
+                    )
                 )
-            )
+            else:
+                print(
+                    "Validation score improved ({} --> {}). Saving model!".format(
+                        self.val_score, epoch_score
+                    )
+                )
             if self.tpu:
                 xm.save(model.state_dict(), model_path)
             else:
