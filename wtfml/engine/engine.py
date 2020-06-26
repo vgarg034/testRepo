@@ -96,7 +96,7 @@ class Engine:
         return losses.avg
 
     @staticmethod
-    def evaluate(data_loader, model, device, eval_metric, use_tpu=False):
+    def evaluate(data_loader, model, device, use_tpu=False):
         losses = AverageMeter()
         final_predictions = []
         final_targets = []
