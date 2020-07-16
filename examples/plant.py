@@ -18,7 +18,8 @@ from wtfml.data_loaders.image import ClassificationDataLoader
 
 
 class DenseCrossEntropy(nn.Module):
-    # Taken from: https://www.kaggle.com/pestipeti/plant-pathology-2020-pytorch
+    # Taken from: 
+    # https://www.kaggle.com/pestipeti/plant-pathology-2020-pytorch
     def __init__(self):
         super(DenseCrossEntropy, self).__init__()
 
@@ -35,7 +36,8 @@ class DenseCrossEntropy(nn.Module):
 
 
 class Model(nn.Module):
-    # Modified from: https://www.kaggle.com/pestipeti/plant-pathology-2020-pytorch
+    # Modified from: 
+    # https://www.kaggle.com/pestipeti/plant-pathology-2020-pytorch
     def __init__(self):
         super().__init__()
         self.base_model = torchvision.models.resnet18(pretrained=True)
@@ -80,7 +82,9 @@ if __name__ == "__main__":
 
     df = pd.read_csv(os.path.join(args.data_path, "train.csv"))
     images = df.image_id.values.tolist()
-    images = [os.path.join(args.data_path, "images", i + ".jpg") for i in images]
+    images = [
+        os.path.join(args.data_path, "images", i + ".jpg") for i in images
+    ]
     targets = df[["healthy", "multiple_diseases", "rust", "scab"]].values
 
     model = Model()
@@ -89,12 +93,20 @@ if __name__ == "__main__":
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     aug = albumentations.Compose(
-        [albumentations.Normalize(mean, std, max_pixel_value=255.0, always_apply=True)]
+        [
+            albumentations.Normalize(
+                mean, 
+                std, 
+                max_pixel_value=255.0, 
+                always_apply=True
+            )
+        ]
     )
 
-    train_images, valid_images, train_targets, valid_targets = train_test_split(
-        images, targets
-    )
+    (
+        train_images, valid_images, 
+        train_targets, valid_targets
+    ) = train_test_split(images, targets)
 
     train_loader = ClassificationDataLoader(
         image_paths=train_images,
@@ -123,21 +135,19 @@ if __name__ == "__main__":
     )
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=15, gamma=0.6)
+    scheduler = torch.optim.lr_scheduler.StepLR(
+        optimizer, step_size=15, gamma=0.6
+    )
 
     for epoch in range(args.epochs):
-        train_loss = Engine.train(train_loader, model, optimizer, device=args.device)
-        predictions, valid_loss = Engine.evaluate(
+        train_loss = Engine.train(
+            train_loader, model, optimizer, device=args.device
+        )
+        valid_loss = Engine.evaluate(
             valid_loader, model, device=args.device
         )
-        predictions = np.vstack((predictions))
-        roc_1 = metrics.roc_auc_score(valid_targets[:, 0], predictions[:, 0])
-        roc_2 = metrics.roc_auc_score(valid_targets[:, 1], predictions[:, 1])
-        roc_3 = metrics.roc_auc_score(valid_targets[:, 2], predictions[:, 2])
-        roc_4 = metrics.roc_auc_score(valid_targets[:, 3], predictions[:, 3])
-        mean_roc = (roc_1 + roc_2 + roc_3 + roc_4) / 4
         print(
-            f"Epoch={epoch}, Train Loss={train_loss} Valid Loss={valid_loss}, Mean ROC AUC={mean_roc}"
+            f"{epoch}, Train Loss={train_loss} Valid Loss={valid_loss}"
         )
 
     test_df = pd.read_csv(os.path.join(args.data_path, "test.csv"))

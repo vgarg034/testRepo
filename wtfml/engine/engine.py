@@ -5,17 +5,16 @@ from ..utils import AverageMeter
 try:
     import torch_xla.core.xla_model as xm
     import torch_xla.distributed.parallel_loader as pl
+
     _xla_available = True
 except ImportError:
     _xla_available = False
-
 try:
     from apex import amp
 
     _apex_available = True
 except ImportError:
     _apex_available = False
-    
 
 
 def reduce_fn(vals):
@@ -52,9 +51,9 @@ class Engine:
         if use_tpu:
             para_loader = pl.ParallelLoader(data_loader, [device])
             tk0 = tqdm(
-                para_loader.per_device_loader(device), 
+                para_loader.per_device_loader(device),
                 total=len(data_loader),
-                disable=xm.get_ordinal()==0
+                desc=f"[xla:{xm.get_ordinal()}]",
             )
         else:
             tk0 = tqdm(data_loader, total=len(data_loader))
@@ -87,54 +86,36 @@ class Engine:
                 if b_idx > 0:
                     optimizer.zero_grad()
             if use_tpu:
-                reduced_loss = xm.mesh_reduce('loss_reduce', loss, reduce_fn)
+                reduced_loss = xm.mesh_reduce("loss_reduce", loss, reduce_fn)
                 losses.update(reduced_loss.item(), data_loader.batch_size)
             else:
                 losses.update(loss.item(), data_loader.batch_size)
-            
+
             tk0.set_postfix(loss=losses.avg)
         return losses.avg
 
     @staticmethod
     def evaluate(data_loader, model, device, use_tpu=False):
         losses = AverageMeter()
-        final_predictions = []
-        final_targets = []
         model.eval()
         with torch.no_grad():
             if use_tpu:
                 para_loader = pl.ParallelLoader(data_loader, [device])
                 tk0 = tqdm(
-                    para_loader.per_device_loader(device), 
+                    para_loader.per_device_loader(device),
                     total=len(data_loader),
-                    disable=xm.get_ordinal()==0
+                    desc=f"[xla:{xm.get_ordinal()}]",
                 )
             else:
                 tk0 = tqdm(data_loader, total=len(data_loader))
-            for b_idx, data in enumerate(tk0):
+            for data in tk0:
                 for key, value in data.items():
                     data[key] = value.to(device)
                 _, loss = model(**data)
                 if use_tpu:
-                    reduced_loss = xm.mesh_reduce('loss_reduce', loss, reduce_fn)
+                    reduced_loss = xm.mesh_reduce("loss_reduce", loss, reduce_fn)
                     losses.update(reduced_loss.item(), data_loader.batch_size)
                 else:
                     losses.update(loss.item(), data_loader.batch_size)
                 tk0.set_postfix(loss=losses.avg)
         return losses.avg
-
-    @staticmethod
-    def predict(data_loader, model, device, use_tpu=False):
-        model.eval()
-        final_predictions = []
-        if use_tpu:
-            raise Exception("TPU not available for predict yet!")
-        with torch.no_grad():
-            tk0 = tqdm(data_loader, total=len(data_loader))
-            for b_idx, data in enumerate(tk0):
-                for key, value in data.items():
-                    data[key] = value.to(device)
-                predictions, _ = model(**data)
-                predictions = predictions.cpu()
-                final_predictions.append(predictions)
-        return final_predictions
