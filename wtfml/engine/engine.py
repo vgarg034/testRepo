@@ -49,11 +49,7 @@ class Engine:
             optimizer.zero_grad()
         if use_tpu:
             para_loader = pl.ParallelLoader(data_loader, [device])
-            tk0 = tqdm(
-                para_loader.per_device_loader(device),
-                total=len(data_loader),
-                desc=f"[xla:{xm.get_ordinal()}]",
-            )
+            tk0 = para_loader.per_device_loader(device)
         else:
             tk0 = tqdm(data_loader, total=len(data_loader))
 
@@ -90,8 +86,17 @@ class Engine:
             else:
                 losses.update(loss.item(), data_loader.batch_size)
 
-            tk0.set_postfix(loss=losses.avg)
-        tk0.close()
+            if not use_tpu:
+                tk0.set_postfix(loss=losses.avg)
+            else:
+                print(
+                    f"""
+                    [xla:{xm.get_ordinal()}]: {b_idx} / {len(data_loader)}, loss={losses.avg}
+                    """,
+                    end="\r",
+                )
+        if not use_tpu:
+            tk0.close()
         return losses.avg
 
     @staticmethod
@@ -101,14 +106,10 @@ class Engine:
         with torch.no_grad():
             if use_tpu:
                 para_loader = pl.ParallelLoader(data_loader, [device])
-                tk0 = tqdm(
-                    para_loader.per_device_loader(device),
-                    total=len(data_loader),
-                    desc=f"[xla:{xm.get_ordinal()}]",
-                )
+                tk0 = para_loader.per_device_loader(device)
             else:
                 tk0 = tqdm(data_loader, total=len(data_loader))
-            for data in tk0:
+            for b_idx, data in enumerate(tk0):
                 for key, value in data.items():
                     data[key] = value.to(device)
                 _, loss = model(**data)
@@ -117,8 +118,17 @@ class Engine:
                     losses.update(reduced_loss.item(), data_loader.batch_size)
                 else:
                     losses.update(loss.item(), data_loader.batch_size)
-                tk0.set_postfix(loss=losses.avg)
-            tk0.close()
+                if not use_tpu:
+                    tk0.set_postfix(loss=losses.avg)
+                else:
+                    print(
+                        f"""
+                        [xla:{xm.get_ordinal()}]: {b_idx} / {len(data_loader)}, loss={losses.avg}
+                        """,
+                        end="\r",
+                    )
+            if not use_tpu:
+                tk0.close()
         return losses.avg
 
     @staticmethod
