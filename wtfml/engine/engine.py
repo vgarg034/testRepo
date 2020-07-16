@@ -91,6 +91,7 @@ class Engine:
                 losses.update(loss.item(), data_loader.batch_size)
 
             tk0.set_postfix(loss=losses.avg)
+        tk0.close()
         return losses.avg
 
     @staticmethod
@@ -117,6 +118,7 @@ class Engine:
                 else:
                     losses.update(loss.item(), data_loader.batch_size)
                 tk0.set_postfix(loss=losses.avg)
+            tk0.close()
         return losses.avg
 
     @staticmethod
