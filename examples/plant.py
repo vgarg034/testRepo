@@ -18,7 +18,7 @@ from wtfml.data_loaders.image import ClassificationDataLoader
 
 
 class DenseCrossEntropy(nn.Module):
-    # Taken from: 
+    # Taken from:
     # https://www.kaggle.com/pestipeti/plant-pathology-2020-pytorch
     def __init__(self):
         super(DenseCrossEntropy, self).__init__()
@@ -36,7 +36,7 @@ class DenseCrossEntropy(nn.Module):
 
 
 class Model(nn.Module):
-    # Modified from: 
+    # Modified from:
     # https://www.kaggle.com/pestipeti/plant-pathology-2020-pytorch
     def __init__(self):
         super().__init__()
@@ -82,9 +82,7 @@ if __name__ == "__main__":
 
     df = pd.read_csv(os.path.join(args.data_path, "train.csv"))
     images = df.image_id.values.tolist()
-    images = [
-        os.path.join(args.data_path, "images", i + ".jpg") for i in images
-    ]
+    images = [os.path.join(args.data_path, "images", i + ".jpg") for i in images]
     targets = df[["healthy", "multiple_diseases", "rust", "scab"]].values
 
     model = Model()
@@ -93,62 +91,35 @@ if __name__ == "__main__":
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     aug = albumentations.Compose(
-        [
-            albumentations.Normalize(
-                mean, 
-                std, 
-                max_pixel_value=255.0, 
-                always_apply=True
-            )
-        ]
+        [albumentations.Normalize(mean, std, max_pixel_value=255.0, always_apply=True)]
     )
 
-    (
-        train_images, valid_images, 
-        train_targets, valid_targets
-    ) = train_test_split(images, targets)
+    (train_images, valid_images, train_targets, valid_targets) = train_test_split(
+        images, targets
+    )
 
     train_loader = ClassificationDataLoader(
         image_paths=train_images,
         targets=train_targets,
         resize=(128, 128),
         augmentations=aug,
-    ).fetch(
-        batch_size=16, 
-        num_workers=4, 
-        drop_last=False, 
-        shuffle=True, 
-        tpu=False
-    )
+    ).fetch(batch_size=16, num_workers=4, drop_last=False, shuffle=True, tpu=False)
 
     valid_loader = ClassificationDataLoader(
         image_paths=valid_images,
         targets=valid_targets,
         resize=(128, 128),
         augmentations=aug,
-    ).fetch(
-        batch_size=16, 
-        num_workers=4, 
-        drop_last=False, 
-        shuffle=False, 
-        tpu=False
-    )
+    ).fetch(batch_size=16, num_workers=4, drop_last=False, shuffle=False, tpu=False)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
-    scheduler = torch.optim.lr_scheduler.StepLR(
-        optimizer, step_size=15, gamma=0.6
-    )
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=15, gamma=0.6)
+    eng = Engine(model, optimizer, device=args.device)
 
     for epoch in range(args.epochs):
-        train_loss = Engine.train(
-            train_loader, model, optimizer, device=args.device
-        )
-        valid_loss = Engine.evaluate(
-            valid_loader, model, device=args.device
-        )
-        print(
-            f"{epoch}, Train Loss={train_loss} Valid Loss={valid_loss}"
-        )
+        train_loss = eng.train(train_loader)
+        valid_loss = eng.evaluate(valid_loader)
+        print(f"{epoch}, Train Loss={train_loss} Valid Loss={valid_loss}")
 
     test_df = pd.read_csv(os.path.join(args.data_path, "test.csv"))
     images = test_df.image_id.values.tolist()
@@ -161,15 +132,10 @@ if __name__ == "__main__":
 
     test_loader = ClassificationDataLoader(
         image_paths=images, targets=targets, resize=(128, 128), augmentations=aug
-    ).fetch(
-        batch_size=16, 
-        num_workers=4, 
-        drop_last=False, 
-        shuffle=False, 
-        tpu=False
-    )
+    ).fetch(batch_size=16, num_workers=4, drop_last=False, shuffle=False, tpu=False)
 
-    predictions = Engine.predict(test_loader, model, device=args.device)
+    eng = Engine(model, optimizer, device=args.device)
+    predictions = eng.predict(test_loader)
     predictions = np.vstack((predictions))
 
     sample = pd.read_csv(os.path.join(args.data_path, "sample_submission.csv"))
