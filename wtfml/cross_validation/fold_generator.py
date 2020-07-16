@@ -7,7 +7,7 @@ import scipy as sp
 from sklearn import model_selection
 
 
-class Folds:
+class FoldGenerator:
     def __init__(
         self,
         targets,
