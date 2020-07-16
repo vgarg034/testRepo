@@ -44,7 +44,6 @@ class Engine:
         if fp16:
             accumulation_steps = 1
         losses = AverageMeter()
-        predictions = []
         model.train()
         if accumulation_steps > 1:
             optimizer.zero_grad()
