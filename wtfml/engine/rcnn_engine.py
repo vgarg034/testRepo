@@ -1,15 +1,17 @@
 import torch
-from tqdm import tqdm
+from tqdm.auto import tqdm
 from ..utils import AverageMeter
 
 try:
     import torch_xla.core.xla_model as xm
+
     _xla_available = True
 except ImportError:
     _xla_available = False
 
 try:
     from apex import amp
+
     _apex_available = True
 except ImportError:
     _apex_available = False
