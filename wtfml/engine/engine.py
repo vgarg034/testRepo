@@ -33,7 +33,18 @@ class Engine:
         use_tpu=False,
         tpu_print=10,
         fp16=False,
+        model_fn=None,
     ):
+        """
+        model_fn should take batch of data, device and model and return loss
+        for example:
+            def model_fn(data, device, model):
+                images, targets = data
+                images = list(image.to(device) for image in images)
+                targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+                _, loss = model(images, targets)
+                return loss
+        """
         self.model = model
         self.optimizer = optimizer
         self.device = device
@@ -42,6 +53,7 @@ class Engine:
         self.use_tpu = use_tpu
         self.tpu_print = tpu_print
         self.fp16 = fp16
+        self.model_fn = model_fn
 
         if self.use_tpu and not _xla_available:
             raise Exception(
@@ -67,11 +79,15 @@ class Engine:
             tk0 = tqdm(data_loader, total=len(data_loader))
 
         for b_idx, data in enumerate(tk0):
-            for key, value in data.items():
-                data[key] = value.to(self.device)
             if self.accumulation_steps == 1 and b_idx == 0:
                 self.optimizer.zero_grad()
-            _, loss = self.model(**data)
+
+            if self.model_fn is None:
+                for key, value in data.items():
+                    data[key] = value.to(self.device)
+                _, loss = self.model(**data)
+            else:
+                loss = self.model_fn(data, self.device, self.model)
 
             if not self.use_tpu:
                 with torch.set_grad_enabled(True):
@@ -102,7 +118,7 @@ class Engine:
             if not self.use_tpu:
                 tk0.set_postfix(loss=losses.avg)
             else:
-                if b_idx % print_idx == 0:
+                if b_idx % print_idx == 0 or b_idx == len(data_loader):
                     xm.master_print(
                         f"{datetime.datetime.now()}: Batch {b_idx} / {len(data_loader)}, loss={losses.avg}"
                     )
@@ -132,7 +148,7 @@ class Engine:
                 if not self.use_tpu:
                     tk0.set_postfix(loss=losses.avg)
                 else:
-                    if b_idx % print_idx == 0:
+                    if b_idx % print_idx == 0 or b_idx == len(data_loader):
                         xm.master_print(
                             f"{datetime.datetime.now()}: Batch {b_idx} / {len(data_loader)}, loss={losses.avg}"
                         )
