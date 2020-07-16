@@ -57,7 +57,7 @@ class Engine:
     def train(self, data_loader):
         losses = AverageMeter()
         self.model.train()
-        print_idx = int(len(data_loader) / self.tpu_print)
+        print_idx = int(len(data_loader) * self.tpu_print / 100)
         if self.accumulation_steps > 1:
             self.optimizer.zero_grad()
         if self.use_tpu:
@@ -112,7 +112,7 @@ class Engine:
 
     def evaluate(self, data_loader):
         losses = AverageMeter()
-        print_idx = int(len(data_loader) / self.tpu_print)
+        print_idx = int(len(data_loader) * self.tpu_print / 100)
         self.model.eval()
         with torch.no_grad():
             if self.use_tpu:
@@ -134,9 +134,7 @@ class Engine:
                 else:
                     if b_idx % print_idx == 0:
                         xm.master_print(
-                            xm.master_print(
-                                f"{datetime.datetime.now()}: Batch {b_idx} / {len(data_loader)}, loss={losses.avg}"
-                            )
+                            f"{datetime.datetime.now()}: Batch {b_idx} / {len(data_loader)}, loss={losses.avg}"
                         )
             if not self.use_tpu:
                 tk0.close()
