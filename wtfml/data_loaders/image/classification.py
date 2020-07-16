@@ -65,9 +65,9 @@ class ClassificationDataLoader:
             image_paths=self.image_paths,
             targets=self.targets,
             resize=self.resize,
-            augmentations=self.augmentations
+            augmentations=self.augmentations,
         )
-    
+
     def fetch(self, batch_size, num_workers, drop_last=False, shuffle=True, tpu=False):
         """
         :param batch_size: batch size
@@ -77,12 +77,12 @@ class ClassificationDataLoader:
         :param tpu: True/False, to use tpu or not
         """
         sampler = None
-        if tpu == True:
+        if tpu:
             sampler = torch.utils.data.distributed.DistributedSampler(
                 self.dataset,
                 num_replicas=xm.xrt_world_size(),
                 rank=xm.get_ordinal(),
-                shuffle=shuffle
+                shuffle=shuffle,
             )
 
         data_loader = torch.utils.data.DataLoader(
@@ -90,6 +90,6 @@ class ClassificationDataLoader:
             batch_size=batch_size,
             sampler=sampler,
             drop_last=drop_last,
-            num_workers=num_workers
+            num_workers=num_workers,
         )
         return data_loader
