@@ -89,7 +89,9 @@ class Engine:
             if not use_tpu:
                 tk0.set_postfix(loss=losses.avg)
             else:
-                print(f"{b_idx} / {len(data_loader)}, loss={losses.avg}", end="\r")
+                xm.master_print(
+                    f"{b_idx} / {len(data_loader)}, loss={losses.avg}", end="\r"
+                )
         if not use_tpu:
             tk0.close()
         return losses.avg
@@ -116,7 +118,9 @@ class Engine:
                 if not use_tpu:
                     tk0.set_postfix(loss=losses.avg)
                 else:
-                    print(f"{b_idx} / {len(data_loader)}, loss={losses.avg}", end="\r")
+                    xm.master_print(
+                        f"{b_idx} / {len(data_loader)}, loss={losses.avg}", end="\r"
+                    )
             if not use_tpu:
                 tk0.close()
         return losses.avg

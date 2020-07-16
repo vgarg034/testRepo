@@ -3,6 +3,7 @@ import numpy as np
 
 try:
     import torch_xla.core.xla_model as xm
+
     _xla_available = True
 except ImportError:
     _xla_available = False
@@ -33,11 +34,18 @@ class EarlyStopping:
             self.save_checkpoint(epoch_score, model, model_path)
         elif score < self.best_score + self.delta:
             self.counter += 1
-            print(
-                "EarlyStopping counter: {} out of {}".format(
-                    self.counter, self.patience
+            if self.tpu:
+                xm.master_print(
+                    "EarlyStopping counter: {} out of {}".format(
+                        self.counter, self.patience
+                    )
                 )
-            )
+            else:
+                print(
+                    "EarlyStopping counter: {} out of {}".format(
+                        self.counter, self.patience
+                    )
+                )
             if self.counter >= self.patience:
                 self.early_stop = True
         else:
