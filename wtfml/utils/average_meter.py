@@ -1,3 +1,8 @@
+"""
+__author__: Abhishek Thakur
+"""
+
+
 class AverageMeter:
     """
     Computes and stores the average and current value
