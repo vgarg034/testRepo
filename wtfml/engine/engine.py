@@ -1,5 +1,5 @@
 import torch
-from tqdm.auto import tqdm
+from tqdm import tqdm
 from ..utils import AverageMeter
 
 try:
@@ -118,3 +118,19 @@ class Engine:
                     losses.update(loss.item(), data_loader.batch_size)
                 tk0.set_postfix(loss=losses.avg)
         return losses.avg
+
+    @staticmethod
+    def predict(data_loader, model, device, use_tpu=False):
+        model.eval()
+        final_predictions = []
+        if use_tpu:
+            raise Exception("TPU not available for predict yet!")
+        with torch.no_grad():
+            tk0 = tqdm(data_loader, total=len(data_loader))
+            for data in tk0:
+                for key, value in data.items():
+                    data[key] = value.to(device)
+                predictions, _ = model(**data)
+                predictions = predictions.cpu()
+                final_predictions.append(predictions)
+        return final_predictions
