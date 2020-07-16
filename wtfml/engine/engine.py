@@ -1,3 +1,4 @@
+import datetime
 import torch
 from tqdm import tqdm
 from ..utils import AverageMeter
@@ -102,7 +103,9 @@ class Engine:
                 tk0.set_postfix(loss=losses.avg)
             else:
                 if b_idx % print_idx == 0:
-                    xm.master_print(f"{b_idx} / {len(data_loader)}, loss={losses.avg}")
+                    xm.master_print(
+                        f"{datetime.datetime.now()}: Batch {b_idx} / {len(data_loader)}, loss={losses.avg}"
+                    )
         if not self.use_tpu:
             tk0.close()
         return losses.avg
@@ -131,7 +134,9 @@ class Engine:
                 else:
                     if b_idx % print_idx == 0:
                         xm.master_print(
-                            f"{b_idx} / {len(data_loader)}, loss={losses.avg}"
+                            xm.master_print(
+                                f"{datetime.datetime.now()}: Batch {b_idx} / {len(data_loader)}, loss={losses.avg}"
+                            )
                         )
             if not self.use_tpu:
                 tk0.close()
