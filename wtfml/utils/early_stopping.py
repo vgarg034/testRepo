@@ -27,6 +27,11 @@ class EarlyStopping:
         else:
             self.val_score = -np.Inf
 
+        if self.tpu and not _xla_available:
+            raise Exception(
+                "You want to use TPUs but you dont have pytorch_xla installed"
+            )
+
     def __call__(self, epoch_score, model, model_path):
         if self.mode == "min":
             score = -1.0 * epoch_score
