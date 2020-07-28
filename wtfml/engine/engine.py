@@ -38,6 +38,7 @@ class Engine:
         tpu_print=10,
         fp16=False,
         model_fn=None,
+        use_mean_loss=False,
     ):
         """
         model_fn should take batch of data, device and model and return loss
@@ -58,6 +59,7 @@ class Engine:
         self.tpu_print = tpu_print
         self.fp16 = fp16
         self.model_fn = model_fn
+        self.use_mean_loss = use_mean_loss
 
         if self.use_tpu and not _xla_available:
             raise Exception(
@@ -95,6 +97,8 @@ class Engine:
 
             if not self.use_tpu:
                 with torch.set_grad_enabled(True):
+                    if self.use_mean_loss:
+                        loss = loss.mean()
                     if self.fp16:
                         with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                             scaled_loss.backward()
@@ -148,6 +152,8 @@ class Engine:
                     reduced_loss = xm.mesh_reduce("loss_reduce", loss, reduce_fn)
                     losses.update(reduced_loss.item(), data_loader.batch_size)
                 else:
+                    if self.use_mean_loss:
+                        loss = loss.mean()
                     losses.update(loss.item(), data_loader.batch_size)
                 if not self.use_tpu:
                     tk0.set_postfix(loss=losses.avg)
