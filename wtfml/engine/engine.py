@@ -142,10 +142,11 @@ class Engine:
             tk0.close()
         return losses.avg
 
-    def evaluate(self, data_loader):
+    def evaluate(self, data_loader, return_predictions=False):
         losses = AverageMeter()
         print_idx = int(len(data_loader) * self.tpu_print / 100)
         self.model.eval()
+        final_predictions = []
         with torch.no_grad():
             if self.use_tpu:
                 para_loader = pl.ParallelLoader(data_loader, [self.device])
@@ -155,7 +156,9 @@ class Engine:
             for b_idx, data in enumerate(tk0):
                 for key, value in data.items():
                     data[key] = value.to(self.device)
-                _, loss = self.model(**data)
+                batch_preds, loss = self.model(**data)
+                if return_predictions:
+                    final_predictions.append(batch_preds)
                 if self.use_tpu:
                     reduced_loss = xm.mesh_reduce("loss_reduce", loss, reduce_fn)
                     losses.update(reduced_loss.item(), data_loader.batch_size)
@@ -172,7 +175,7 @@ class Engine:
                         )
             if not self.use_tpu:
                 tk0.close()
-        return losses.avg
+        return losses.avg, final_predictions
 
     def predict(self, data_loader):
         self.model.eval()
