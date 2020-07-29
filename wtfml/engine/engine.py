@@ -4,6 +4,7 @@ __author__: Abhishek Thakur
 
 import datetime
 import torch
+from torch.cuda import amp
 from tqdm import tqdm
 from ..utils import AverageMeter
 
@@ -14,12 +15,6 @@ try:
     _xla_available = True
 except ImportError:
     _xla_available = False
-try:
-    from apex import amp
-
-    _apex_available = True
-except ImportError:
-    _apex_available = False
 
 
 def reduce_fn(vals):
@@ -36,7 +31,7 @@ class Engine:
         accumulation_steps=1,
         use_tpu=False,
         tpu_print=10,
-        fp16=False,
+        fp16=True,
         model_fn=None,
         use_mean_loss=False,
     ):
@@ -57,19 +52,19 @@ class Engine:
         self.accumulation_steps = accumulation_steps
         self.use_tpu = use_tpu
         self.tpu_print = tpu_print
-        self.fp16 = fp16
         self.model_fn = model_fn
+        self.fp16 = fp16
         self.use_mean_loss = use_mean_loss
+        self.scaler = None
 
         if self.use_tpu and not _xla_available:
             raise Exception(
                 "You want to use TPUs but you dont have pytorch_xla installed"
             )
-        if self.fp16 and not _apex_available:
-            raise Exception("You want to use fp16 but you dont have apex installed")
-        if self.fp16 and use_tpu:
+        if self.fp16 is not None and use_tpu:
             raise Exception("Apex fp16 is not available when using TPUs")
         if self.fp16:
+            self.scaler = amp.GradScaler()
             self.accumulation_steps = 1
 
     def train(self, data_loader):
@@ -93,23 +88,36 @@ class Engine:
                     data[key] = value.to(self.device)
                 _, loss = self.model(**data)
             else:
-                loss = self.model_fn(data, self.device, self.model)
+                if self.fp16:
+                    with amp.autocast():
+                        loss = self.model_fn(data, self.device, self.model)
+                else:
+                    loss = self.model_fn(data, self.device, self.model)
 
             if not self.use_tpu:
                 with torch.set_grad_enabled(True):
                     if self.use_mean_loss:
                         loss = loss.mean()
+
                     if self.fp16:
-                        with amp.scale_loss(loss, self.optimizer) as scaled_loss:
-                            scaled_loss.backward()
+                        self.scaler.scale(loss).backward()
                     else:
                         loss.backward()
+
                     if (b_idx + 1) % self.accumulation_steps == 0:
-                        self.optimizer.step()
+                        if self.fp16:
+                            self.scaler.step(self.optimizer)
+                        else:
+                            self.optimizer.step()
+
                         if self.scheduler is not None:
                             self.scheduler.step()
+
                         if b_idx > 0:
                             self.optimizer.zero_grad()
+
+                    if self.fp16:
+                        self.scaler.update()
             else:
                 loss.backward()
                 xm.optimizer_step(self.optimizer)
