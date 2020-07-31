@@ -31,7 +31,7 @@ class Engine:
         accumulation_steps=1,
         use_tpu=False,
         tpu_print=10,
-        fp16=True,
+        fp16=False,
         model_fn=None,
         use_mean_loss=False,
     ):
@@ -61,11 +61,10 @@ class Engine:
             raise Exception(
                 "You want to use TPUs but you dont have pytorch_xla installed"
             )
-        if self.fp16 is not None and use_tpu:
+        if self.fp16 and use_tpu:
             raise Exception("Apex fp16 is not available when using TPUs")
         if self.fp16:
             self.scaler = amp.GradScaler()
-            self.accumulation_steps = 1
 
     def train(self, data_loader):
         losses = AverageMeter()
