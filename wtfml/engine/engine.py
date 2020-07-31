@@ -113,11 +113,12 @@ class Engine:
                         if self.scheduler is not None:
                             self.scheduler.step()
 
+                        if self.fp16:
+                            self.scaler.update()
+
                         if b_idx > 0:
                             self.optimizer.zero_grad()
 
-                    if self.fp16:
-                        self.scaler.update()
             else:
                 loss.backward()
                 xm.optimizer_step(self.optimizer)
