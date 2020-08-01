@@ -156,7 +156,11 @@ class Engine:
             for b_idx, data in enumerate(tk0):
                 for key, value in data.items():
                     data[key] = value.to(self.device)
-                batch_preds, loss = self.model(**data)
+                if self.fp16:
+                    with amp.autocast():
+                        batch_preds, loss = self.model(**data)
+                else:
+                    batch_preds, loss = self.model(**data)
                 if return_predictions:
                     final_predictions.append(batch_preds)
                 if self.use_tpu:
