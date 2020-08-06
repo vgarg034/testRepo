@@ -57,8 +57,6 @@ class ClassificationDataset:
             if self.augmentations is not None:
                 augmented = self.augmentations(image=image)
                 image = augmented["image"]
-            if self.channel_first:
-                image = np.transpose(image, (2, 0, 1)).astype(np.float32)
         elif self.backend == "cv2":
             image = cv2.imread(self.image_paths[item])
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -71,10 +69,10 @@ class ClassificationDataset:
             if self.augmentations is not None:
                 augmented = self.augmentations(image=image)
             image = augmented["image"]
-            if self.channel_first:
-                image = np.transpose(image, (2, 0, 1)).astype(np.float32)
         else:
             raise Exception("Backend not implemented")
+        if self.channel_first:
+            image = np.transpose(image, (2, 0, 1)).astype(np.float32)
         return {
             "image": torch.tensor(image),
             "targets": torch.tensor(targets),
