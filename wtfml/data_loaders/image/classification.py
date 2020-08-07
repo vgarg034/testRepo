@@ -110,7 +110,15 @@ class ClassificationDataLoader:
             channel_first=self.channel_first,
         )
 
-    def fetch(self, batch_size, num_workers, drop_last=False, shuffle=True, tpu=False):
+    def fetch(
+        self,
+        batch_size,
+        num_workers,
+        drop_last=False,
+        shuffle=True,
+        tpu=False,
+        sampler=None,
+    ):
         """
         :param batch_size: batch size
         :param num_workers: number of processes to use
@@ -118,7 +126,6 @@ class ClassificationDataLoader:
         :param shuffle: True/False
         :param tpu: True/False, to use tpu or not
         """
-        sampler = None
         if tpu:
             sampler = torch.utils.data.distributed.DistributedSampler(
                 self.dataset,
