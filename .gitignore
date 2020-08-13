@@ -1,3 +1,5 @@
+pythonenv3.8/
+
 # data files
 *.bin
 *.csv
